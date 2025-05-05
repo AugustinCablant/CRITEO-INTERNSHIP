@@ -1,5 +1,7 @@
 import numpy as np
 from collections import deque
+import networkx as nx
+import matplotlib.pyplot as plt 
 
 rng = np.random.RandomState(42)
 
@@ -240,3 +242,31 @@ class Tree:
         path = np.array(path[1:])
         path = list(path - 1)[::-1]
         return max_mean, path
+    
+
+    def visualize_tree(self):
+        G = nx.DiGraph()  
+
+        def add_nodes_and_edges(node):
+            G.add_node(node.name, level=node.level, value=node.value)
+            for child in node.children:
+                G.add_edge(node.name, child.name)
+                add_nodes_and_edges(child)
+
+        add_nodes_and_edges(self.root)
+
+        pos = {}
+        for node in G.nodes():
+            level = G.nodes[node]['level']
+            pos[node] = (level, -len(pos))  
+
+        labels = {}
+        for node in G.nodes():
+            name = node
+            value = round(G.nodes[node]['value'], 2)  
+            labels[name] = f"{name}\n({value})" 
+
+        # plot the graph
+        plt.figure(figsize=(8, 6))
+        nx.draw(G, pos, with_labels=True, labels=labels, node_size=3000, node_color='skyblue', font_size=10, font_weight='bold', arrows=True)
+        plt.show()
