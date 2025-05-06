@@ -264,6 +264,9 @@ class Environment:
         plt.title("Tree Visualization")
         plt.show()
 
+
+
+""" 
 class PolarizedEnvironment(Environment):
     def __init__(self, rd, nb_leaves_per_class, nb_levels, node_distribution):
         super().__init__(rd, nb_leaves_per_class, nb_levels, node_distribution)
@@ -378,4 +381,4 @@ class PolarizedEnvironment(Environment):
 
         plt.title("Tree Visualization")
         plt.show()
-
+"""

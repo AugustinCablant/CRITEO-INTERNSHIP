@@ -3,54 +3,33 @@ from collections import deque
 import networkx as nx
 import matplotlib.pyplot as plt 
 
-rng = np.random.RandomState(42)
+rng = np.random.RandomState(2025)
+
 
 class Node:
-    """
-    Class Node
-    """
-
-    def __init__(self, data, parent=None):
-        """
-
-        Parameters
-        ----------
-        data
-        parent
-        """
-
+    def __init__(self, data, parent=None, mean=0, var=1):
         self.name, self.value = data
+        self.mean = mean  
+        self.var = var  
         self.children = []
         self.scores_children = np.array([])
         self.nb_children = 0
         self.parent = parent
-        if self.parent:
-            self.level = self.parent.level + 1
-        else:
-            self.level = 0
-        level_correction = 10 ** (-self.level)
-        self.value = self.value * level_correction
+        self.level = parent.level + 1 if parent else 0
+        self.value = self.value * (10 ** (-self.level))  
 
-    def get_child_nodes(self, nodes=None):
-        """
-
-        Parameters
-        ----------
-        nodes
-
-        Returns
-        -------
-
-        """
+    def get_child_nodes(self):
         if not nodes:
             nodes = []
         for child in self.children:
-            if child.children:
-                child.get_child_nodes(nodes)
-                nodes.append((child.name, child.value, child.level, child.nb_children))
-            else:
-                nodes.append((child.name, child.value, child.level, child.nb_children))
+            nodes.append((child.name, child.value, child.level, child.nb_children))
+            nodes.extend(child.get_child_nodes())
         return nodes
+
+    def get_reward(self):
+        """Generate the reward"""
+        return self.mean + np.sqrt(self.var) * np.random.normal()
+
 
 
 class Tree:
@@ -67,11 +46,11 @@ class Tree:
         }
         self.max_level = 0
 
-    def create_node(self, data, parent=None):
+    def create_node(self, data, parent=None, mean=0, var=1):
         """
         Utility function to create a node.
         """
-        return Node(data, parent)
+        return Node(data, parent, mean, var)
 
     def insert(self, parent_node, data):
         """
@@ -93,31 +72,20 @@ class Tree:
         parent_node.nb_children = len(parent_node.children)
         parent_node.scores_children = np.full(parent_node.nb_children, 1.0 / parent_node.nb_children)
 
+        self.max_level = max(self.max_level, node.level)
+
         return node, parent_node
 
     def get_parent_nodes(self, node):
-        """ Get parent nodes of a current node
-
-        Parameters
-        ----------
-        node
-        nodes list on which the recursion is made
-
-        Returns
-        -------
-
-        """
         nodes = [node]
-
         def _recursive_parent_nodes(node, nodes):
             if node.parent:
                 nodes.append(node.parent)
                 _recursive_parent_nodes(node.parent, nodes)
             return nodes
-
         nodes = _recursive_parent_nodes(node, nodes)
         nodes.reverse()
-        return nodes
+        return [(node.name, node.data) for node in nodes]
 
     def get_all_nodes(self):
         """ Get all node utility function
@@ -244,29 +212,4 @@ class Tree:
         return max_mean, path
     
 
-    def visualize_tree(self):
-        G = nx.DiGraph()  
-
-        def add_nodes_and_edges(node):
-            G.add_node(node.name, level=node.level, value=node.value)
-            for child in node.children:
-                G.add_edge(node.name, child.name)
-                add_nodes_and_edges(child)
-
-        add_nodes_and_edges(self.root)
-
-        pos = {}
-        for node in G.nodes():
-            level = G.nodes[node]['level']
-            pos[node] = (level, -len(pos))  
-
-        labels = {}
-        for node in G.nodes():
-            name = node
-            value = round(G.nodes[node]['value'], 2)  
-            labels[name] = f"{name}\n({value})" 
-
-        # plot the graph
-        plt.figure(figsize=(8, 6))
-        nx.draw(G, pos, with_labels=True, labels=labels, node_size=3000, node_color='skyblue', font_size=10, font_weight='bold', arrows=True)
-        plt.show()
+    
