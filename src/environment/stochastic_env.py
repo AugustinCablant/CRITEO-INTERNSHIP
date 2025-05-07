@@ -124,36 +124,7 @@ class StochasticEnvironment(gym.Env):
     def render(self, mode='human', close=False):
         pass
 
-    
-    def visualize_tree(self):
-        G = nx.DiGraph()
 
-        def add_edges(node, parent_name=None):
-            if node is not None:
-                G.add_node(node.name, level=node.level) 
-                if parent_name:
-                    G.add_edge(parent_name, node.name)  
-                for child in node.children:  
-                    add_edges(child, node.name)
-
-        add_edges(self.tree.root)
-        
-
-        color_map = plt.cm.get_cmap("viridis", self.tree.max_level + 1)
-        levels = [G.nodes[node]['level'] for node in G.nodes]
-        norm = plt.Normalize(vmin=min(levels), vmax=max(levels))
-        node_colors = [color_map(norm(G.nodes[node]['level'])) for node in G.nodes]
-        pos = nx.spring_layout(G, seed=2025)  
-        labels = nx.get_node_attributes(G, 'label')
-        nx.draw(G, pos, with_labels=True, node_size=3000, node_color=node_colors, font_size=10, font_weight='bold')
-        sm = plt.cm.ScalarMappable(cmap=color_map, norm=norm)
-        sm.set_array([])
-        level_labels = [f"Couche {i}" for i in range(self.tree.max_level + 1)]
-        cbar = plt.colorbar(sm, shrink=2, aspect=2)
-        cbar.set_ticks(np.linspace(0, 1, self.tree.max_level + 1))  
-        cbar.set_ticklabels(level_labels)  
-        
-        plt.show()
             
         
         
