@@ -7,124 +7,84 @@ from gym import spaces
 import numpy as np
 
 class StochasticEnvironment(gym.Env):
-    """
-    The Environment class represents a decision-making environment with a tree structure.
-    The tree is generated dynamically and rewards are assigned to each node based on its level and value. 
-    The environment allows the computation of rewards based on nodes and paths, 
-    and finds the best strategy for decision-making.
-
-    Attributes
-    ----------
-    env_rng : numpy.random.RandomState
-        A random state generator used for sampling rewards.
-    
-    nb_layers : int 
-        Number of layers for the Tree. 
-        Example 3 
-
-    nb_nodes_per_layer : list
-        Number of nodes per layer for the Tree. 
-        Example [1, 2, 5]
-
-    mus : list
-        Mean of the distribution for each layer. 
-        Example [0, [1, 4], [[0.1, 0.3], [0.2, 0.1, 0.1]]]
-    
-    """ 
-    def __init__(self, nb_nodes_per_layer, mus):
-        self.env_rng = np.random.RandomState(2025)  # Use a fixed seed for reproducibility
-        self.nb_layers = len(nb_nodes_per_layer) 
-        self.nb_nodes_per_layer = nb_nodes_per_layer
+    def __init__(self, mus, seed=2025):
         self.mus = mus
-        self.sigma = 1
-
-    def reset(self):
-        self.tree = Tree()
+        self.var = 2
+        self.seed = seed
+        self.rng = np.random.RandomState(seed)
         self.generate_tree()
-        return [0]
+        
+    def reset(self, seed):
+        self.rng = np.random.RandomState(seed)
+        tree = self.generate_tree()
+        return tree
     
-    def _initialize_tree(self):
-        """
-        Initializes the tree by creating the root node.
-        """
-        self.root = None
-        self.tree = Tree()
-        self.root = self.tree.insert(self.root, ('root', self.mus[0])) 
-
     def generate_tree(self):
-        self._initialize_tree()
+        tree = Tree(seed=self.seed)
+        var = 2
+        root = tree.insert(parent_node=None, name="Utilisateur", mean=0, var=0)
 
-        def build_layer(parents, mus_layer, layer_idx):
-            current_layer_nodes = []
+        # First Layer
+        mu_layer1 = self.mus[0]
+        vehicule, _ = tree.insert(parent_node=root, name="vehicule", mean=mu_layer1[0], var=var)
+        mob_verte, _ = tree.insert(parent_node=root, name="Mobilités Vertes", mean=mu_layer1[1], var=var)
 
-            if len(parents) != len(mus_layer):
-                raise ValueError(f"Layer {layer_idx}: expected {len(parents)} parents, got {len(mus_layer)} mus sublists")
-            
-            for parent_idx, (parent_node, child_mus_list) in enumerate(zip(parents, mus_layer)):
-                if not isinstance(child_mus_list, list):
-                    raise ValueError(f"Layer {layer_idx}: mus[{layer_idx}][{parent_idx}] should be a list of floats")
+        # Second Layer
+        mu_layer2 = self.mus[1]
+        mu_layer2_1 = mu_layer2[0]
+        taxi, _ = tree.insert(parent_node=vehicule, name="taxi", mean=mu_layer2_1[0], var=var)
+        uber, _ = tree.insert(parent_node=vehicule, name="uber", mean=mu_layer2_1[1], var=var)
+        bus, _ = tree.insert(parent_node=vehicule, name="bus", mean=mu_layer2_1[2], var=var)
+        tram, _ = tree.insert(parent_node=vehicule, name="tram", mean=mu_layer2_1[3], var=var)
+        covoiturage, _ = tree.insert(parent_node=vehicule, name="covoiturage", mean=mu_layer2_1[4], var=var)
+        avion, _ = tree.insert(parent_node=vehicule, name="avion", mean=mu_layer2_1[5], var=var)
+        train, _ = tree.insert(parent_node=vehicule, name="train", mean=mu_layer2_1[6], var=var)
+        rer, _ = tree.insert(parent_node=vehicule, name="RER", mean=mu_layer2_1[7], var=var)
+        metro, _ = tree.insert(parent_node=vehicule, name="métro", mean=mu_layer2_1[8], var=var)
 
-                for child_idx, mu in enumerate(child_mus_list):
-                    value = self.env_rng.normal(mu, self.sigma)
-                    node_data = (f"Node_{layer_idx}_{parent_idx}_{child_idx}", value)
-                    node, _ = self.tree.insert(parent_node, node_data)
-                    current_layer_nodes.append(node)
-            return current_layer_nodes
-
-        if not isinstance(self.mus[0], (int, float)):
-            raise ValueError("mus[0] must be a scalar for root node.")
-        self.root.data = ("root", self.env_rng.normal(self.mus[0], self.sigma))
-
-        parents = [self.root]
-
-        for layer_idx in range(1, len(self.mus)):
-            mus_layer = self.mus[layer_idx]
-
-            if layer_idx == 1:
-                current_layer_nodes = []
-                for idx, mu in enumerate(mus_layer):
-                    value = self.env_rng.normal(mu, self.sigma)
-                    node_data = (f"Node_{layer_idx}_{idx}", value)
-                    node, _ = self.tree.insert(self.root, node_data)
-                    current_layer_nodes.append(node)
-                parents = current_layer_nodes
-            else:
-                parents = build_layer(parents, mus_layer, layer_idx)
-
-        return self.tree
+        mu_layer2_2 = mu_layer2[1]
+        velo, _ = tree.insert(parent_node=mob_verte, name="vélo", mean=mu_layer2_2[0], var=var)
+        marche, _ = tree.insert(parent_node=mob_verte, name="marche", mean=mu_layer2_2[1], var=var)
+        cap, _ = tree.insert(parent_node=mob_verte, name="course à pied", mean=mu_layer2_2[2], var=var)
+        
+        self.tree = tree
+        return tree
+    
     
     def get_action_set(self):
-        return list(np.arange(len(self.tree.get_all_nodes())))
+        return self.tree.get_all_leaves()
     
-    def get_reward(self, action):
-        """Obtain the reward given an action."""
-        # The action is a path, with indexes corresponding to the nodes 
-        node = self.tree.graph.get(action)
-        if node:
-            total_reward = 0
-            path_node = node
-            while path_node:
-                total_reward += path_node.get_reward()
-                path_node = path_node.parent
-            return total_reward
-        return 0
+    def sample_randomly(self):
+        action_set = self.get_action_set()
+        random_index = np.random.choice(len(action_set))
+        leaf_chosen = action_set[random_index]
+        return leaf_chosen
+
+    def get_reward(self, leaf):
+        return self.tree.get_reward_leaf(leaf)
+    
+    def get_total_reward_per_leaf(self):
+        action_set = self.get_action_set()
+        total_reward_per_leaf = [self.get_reward(leaf) for leaf in action_set]
+        self.total_reward_per_leaf = total_reward_per_leaf
+        return total_reward_per_leaf
     
     def get_best_strategy_reward(self):
-        all_rewards = [node.mean for node in self.tree.get_all_nodes()]
-        return np.max(all_rewards)
-
-    def get_reward_by_node(self, node):
-        return node.get_reward()
+        best_arm_path =  self.tree.find_best_arm_path()
+        return [node.name for node in best_arm_path] ,np.sum([node.value for node in best_arm_path])
     
-    def step(self, action):
-        reward = self.get_reward(action)
+    def get_gap(self, leaf):
+        total_reward_per_leaf = self.get_total_reward_per_leaf()
+        reward_leaf = self.get_reward(leaf)
+        return max(total_reward_per_leaf) - reward_leaf
+    
+    def get_means(self):
+        return list(np.array(self.mus[0][0]) + np.array(self.mus[1][0])) + list(np.array(self.mus[0][1]) + np.array(self.mus[1][1]))
+
+    def step(self, leaf):
+        reward = self.get_reward_leaf(leaf)
         done = True  
         return [0], reward, done, {}
     
     def render(self, mode='human', close=False):
         pass
-
-
-            
-        
-        

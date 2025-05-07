@@ -33,8 +33,8 @@ class NestedExponentialWeights:
         A function representing the environment that returns rewards/losses for chosen actions.
     """
 
-    def __init__(self, rd, max_rounds):
-        self.rng = np.random.RandomState(rd)  
+    def __init__(self, seed, max_rounds):
+        self.rng = np.random.RandomState(seed)  
         self.max_round = max_rounds           
 
     def set_environment(self, environment):

@@ -3,11 +3,10 @@ from collections import deque
 import networkx as nx
 import matplotlib.pyplot as plt 
 
-rng = np.random.RandomState(2025)
-
-
 class Node:
-    def __init__(self, name, parent=None, mean=0, var=1):
+    def __init__(self, name, parent=None, mean=0, var=1, seed=2025):
+        self.seed = seed
+        self.rng =  np.random.RandomState(seed)
         self.name = name
         self.mean = mean  
         self.var = var  
@@ -17,6 +16,7 @@ class Node:
         self.parent = parent
         self.level = parent.level + 1 if parent else 0
         self.value = self.get_reward()
+    
 
     def get_child_nodes(self):
         if not nodes:
@@ -27,18 +27,20 @@ class Node:
         return nodes
 
     def get_reward(self):
-        return self.mean + np.sqrt(self.var) * np.random.normal()
+        return self.mean + np.sqrt(self.var) * self.rng.normal()
 
 
 
 class Tree:
-    def __init__(self):
+    def __init__(self, seed=2025):
         self.levels = [[]]
         self.graph = {'root': None,}
         self.max_level = 0
+        self.seed = seed
+        self.rng = np.random.RandomState(seed)
 
     def create_node(self, name, parent=None, mean=0, var=1):
-        return Node(name, parent, mean, var)
+        return Node(name, parent, mean, var, seed=self.seed)
 
     def insert(self, parent_node, name, mean, var):
         if parent_node is None:
@@ -188,6 +190,3 @@ class Tree:
         plt.title("Environment")
         plt.axis('off')
         plt.show()
-    
-
-    
