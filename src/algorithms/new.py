@@ -34,80 +34,18 @@ class NestedExponentialWeights:
     """
 
     def __init__(self, rd, max_rounds):
-        """
-        Initializes the NEW agent with the given settings.
-
-        Parameters:
-        -----------
-        settings : dict
-            A dictionary containing the settings for the agent:
-            - 'rd': random seed for random number generation.
-            - 'max_rounds': maximum number of rounds for the algorithm to run.
-        """
-        self.rng = np.random.RandomState(rd)  # Initialize random state
-        self.max_round = max_rounds           # Maximum number of rounds
+        self.rng = np.random.RandomState(rd)  
+        self.max_round = max_rounds           
 
     def set_environment(self, environment):
-        """
-        Sets the environment function which the agent will interact with.
-
-        The environment function should take two arguments:
-        - A vector of size K representing the chosen slate (where non-zero entries indicate 
-          the chosen actions).
-        - The current round number, t.
-
-        It should return the rewards/losses for the chosen slate, with rewards clipped to 
-        be in the range [-1, 1]. Non-chosen actions in the slate should return 0.
-
-        Parameters:
-        -----------
-        environment : function
-            A function that takes a vector of actions (slate) and the current round number as inputs,
-            and returns the reward/loss associated with the chosen actions.
-        """
         self.environment = environment
 
     def vector_proba(self, y):
-        """
-        Converts a vector of values into a probability distribution using the softmax function.
-
-        This is done in a numerically stable way to avoid overflow issues.
-
-        Parameters:
-        -----------
-        y : np.ndarray
-            A vector of values (usually scores or preferences for actions).
-
-        Returns:
-        --------
-        np.ndarray
-            A vector of probabilities corresponding to the input values, where the probabilities 
-            sum to 1.
-        """
-        stable_exp_y = np.exp(y - np.max(y))  # Shift y to avoid overflow
-        proba_vector = stable_exp_y / np.sum(stable_exp_y)  # Normalize to get probabilities
+        stable_exp_y = np.exp(y - np.max(y))  
+        proba_vector = stable_exp_y / np.sum(stable_exp_y)  
         return proba_vector
 
     def sample_node_path(self, round):
-        """
-        Samples a path through the decision tree, starting from the root.
-
-        In each round, the agent chooses an action based on the current scores of the nodes 
-        (actions), and accumulates rewards.
-
-        Parameters:
-        -----------
-        round : int
-            The current round number.
-
-        Returns:
-        --------
-        tuple
-            A tuple (node_path, proba_path, reward_path), where:
-            - node_path : A list of node indices representing the path taken.
-            - proba_path : A list of probabilities associated with each node along the path.
-            - reward_path : A list of rewards received at each node along the path.
-        """
         node_path = []  # Path of nodes chosen
         proba_path = []  # Corresponding probabilities for each node
         reward_path = []  # Corresponding rewards for each node
@@ -128,21 +66,6 @@ class NestedExponentialWeights:
         return node_path, proba_path, reward_path
 
     def update_score(self, nodes_path, proba_path, reward_path):
-        """
-        Updates the scores of the nodes along the path based on the rewards received.
-
-        The score update is performed using a weighted average, where the weight depends 
-        on the probability of selecting the node.
-
-        Parameters:
-        -----------
-        nodes_path : list
-            A list of node indices representing the path taken.
-        proba_path : list
-            A list of probabilities associated with each node along the path.
-        reward_path : list
-            A list of rewards received at each node along the path.
-        """
         node = self.environment.tree.root  # Start from the root node
         proba = 1  # Initial probability is 1
 
@@ -153,23 +76,6 @@ class NestedExponentialWeights:
             node = node.children[idx_node]  # Move to the next node in the path
 
     def iterate_learning(self):
-        """
-        Runs the agent for a set number of rounds, making decisions and updating scores.
-        
-        During each round, the agent samples a node path, receives rewards, and updates 
-        the node scores. The agent's performance metrics are tracked, including regret 
-        and total reward.
-
-        The function also periodically saves results and visualizes the progress.
-
-        Returns:
-        --------
-        dict
-            A dictionary containing the performance metrics over all rounds:
-            - 'reward': List of average rewards at each checkpoint.
-            - 'regret': List of total regrets at each checkpoint.
-            - 'round': List of round numbers at which metrics were recorded.
-        """
         metrics = {
             'reward': [],
             'regret': [],
@@ -203,5 +109,7 @@ class NestedExponentialWeights:
 
         # Final visualization (if any)
         self.score_vector = None  # Not used but could be extended for visualizing score distribution
-
         return metrics
+    
+    def name(self):
+      return 'NEW' 
