@@ -16,6 +16,7 @@ class Node:
         self.nb_children = 0
         self.parent = parent
         self.level = parent.level + 1 if parent else 0
+        self.value = self.get_reward()
 
     def get_child_nodes(self):
         if not nodes:
@@ -44,10 +45,12 @@ class Tree:
             node = self.create_node(name, mean=mean, var=var)
             if node.level == 0:
                 self.root = node
+                value = node.get_reward()
                 self.graph['root'] = node
             return node
 
         node = self.create_node(name, parent_node, mean, var)
+        value = node.get_reward()
         self.graph[name] = node
         parent_node.children.append(node)
         parent_node.nb_children = len(parent_node.children)
@@ -92,14 +95,14 @@ class Tree:
         parents_leaf = self.get_parent_nodes(leaf)
         reward = 0 
         for node in parents_leaf:
-            reward += node.get_reward()
+            reward += node.value
         return reward
     
     def get_reward_leaves(self):
         leaves = self.get_all_leaves()
         data = []
         for leaf in leaves:
-            data.append([leaf.name, self.get_reward_leaf(leaf)])
+            data.append([leaf, leaf.name, self.get_reward_leaf(leaf)])
         return data
 
 
@@ -131,27 +134,14 @@ class Tree:
                 queue.extend(unvisited)
         return visited
 
-    def find_max_sum_path(self, root, max_result=-np.infty, max_path=[]):
-        if root is None:
-            return 0, max_result
-        max_sums = [0]
-        max_paths = [[]]
-        for child in root.children:
-            max_sum, idx_max_path = self.find_max_sum_path(child, max_result, max_path)
-            max_sums.append(max_sum)
-            max_paths.append(idx_max_path)
-        sums = root.get_reward() + np.array(max_sums)
-        idx = np.argmax(sums)
-        max_result = sums[idx]
-        max_path = max_paths[idx]
-        max_path.append(idx)
-        return max_result, max_path
-
     def find_best_arm_path(self):
-        max_mean, path = self.find_max_sum_path(self.root)
-        path = np.array(path[1:])
-        path = list(path - 1)[::-1]
-        return max_mean, path
+        data = self.get_reward_leaves()
+        best_leaf_index = np.argmax([x[2] for x in data])
+        best_leaf, _, _ = data[best_leaf_index]
+        path_nodes = self.get_parent_nodes(best_leaf)
+        path_rewards = [node.value for node in path_nodes]
+        path_names = [node.name for node in path_nodes]
+        return path_nodes
     
     def visualize_tree(self):
         G = nx.DiGraph()
@@ -170,18 +160,26 @@ class Tree:
             width_step = layer_width / max(num_children, 1)
 
             for i, child in enumerate(node.children):
-                reward = child.get_reward()
+                reward = child.value
                 G.add_edge(node.name, child.name)
                 edge_labels[(node.name, child.name)] = f"{reward:.2f}"
 
-                child_x = pos_x - layer_width/2 + (i + 0.5) * width_step
+                child_x = pos_x - layer_width / 2 + (i + 0.5) * width_step
                 add_edges(child, child_x, pos_y + 1, width_step)
 
         add_edges(self.root)
+        for node in self.get_all_nodes():
+            if len(node.children) == 0:  
+                total_reward = self.get_reward_leaf(node)
+                labels[node.name] = f"{node.name}\n({total_reward:.2f})"
+
         cmap = plt.cm.viridis
         colors = [cmap(l / (self.max_level + 1)) for l in node_colors]
         plt.figure(figsize=(14, 8))
-        nx.draw(G, pos, labels=labels, node_color=colors, with_labels=True, node_size=2000, font_size=10, font_color='white')
+        nx.draw(
+            G, pos, labels=labels, node_color=colors,
+            with_labels=True, node_size=2000, font_size=10, font_color='white'
+        )
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=9)
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=self.max_level))
         sm.set_array([])
