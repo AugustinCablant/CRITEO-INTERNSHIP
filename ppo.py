@@ -11,6 +11,8 @@ from torch.optim import Adam
 from torch.distributions import MultivariateNormal
 
 class PPO:
+	""" Implementation of PPO using Actor-Critic 
+	The actor takes the decisions while the critic evaluate the quality of these decisions."""
 	def __init__(self, policy_class, env, **hyperparameters):
 		self.env = env
 		self.obs_dim = env.observation_space.shape[0]
@@ -28,7 +30,7 @@ class PPO:
 		self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
 		self.cov_mat = torch.diag(self.cov_var)
 
-	def learn(self, total_timesteps):
+	def learn(self, total_timesteps):  # Learning method 
 		t_so_far = 0 # Timesteps simulated so far
 		i_so_far = 0 # Iterations ran so far
 		while t_so_far < total_timesteps:                                                                       
@@ -45,7 +47,7 @@ class PPO:
 			self.logger['t_so_far'] = t_so_far
 			self.logger['i_so_far'] = i_so_far
 
-			# Calculate advantage at k-th iteration
+			# Calculate advantage at k-th iteration : key role
 			V, _ = self.evaluate(batch_obs, batch_acts)
 			A_k = batch_rtgs - V.detach()                                                                       
 			A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
@@ -77,7 +79,7 @@ class PPO:
 				self.logger['actor_losses'].append(actor_loss.detach())
 
 
-	def rollout(self):
+	def rollout(self): # Generate trajectory
 		# Batch data.
 		batch_obs = []
 		batch_acts = []
