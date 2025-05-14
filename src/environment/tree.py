@@ -4,8 +4,8 @@ import networkx as nx
 import matplotlib.pyplot as plt 
 
 class Node:
-    def __init__(self, name, parent=None, mean=0, var=1, seed=2025):
-        self.seed = seed
+    def __init__(self, name, parent=None, mean=0, var=1, seed=None):
+        #self.seed = seed
         self.rng =  np.random.RandomState(seed)
         self.name = name
         self.mean = mean  
@@ -15,7 +15,7 @@ class Node:
         self.nb_children = 0
         self.parent = parent
         self.level = parent.level + 1 if parent else 0
-        self.value = self.get_reward()
+        self.reset()
     
 
     def get_child_nodes(self):
@@ -26,33 +26,40 @@ class Node:
             nodes.extend(child.get_child_nodes())
         return nodes
 
-    def get_reward(self):
-        return self.mean + np.sqrt(self.var) * self.rng.normal()
+    def reset(self):
+        value = self.mean + np.sqrt(self.var) * self.rng.normal()
+        self.value = value
+        return value
 
 
 
 class Tree:
-    def __init__(self, seed=2025):
+    def __init__(self, seed=None):
         self.levels = [[]]
         self.graph = {'root': None,}
         self.max_level = 0
-        self.seed = seed
+        #self.seed = seed
         self.rng = np.random.RandomState(seed)
 
+    def step(self):
+        for key, node in self.graph.items():
+            node.reset()
+            self.graph[key] = node
+
     def create_node(self, name, parent=None, mean=0, var=1):
-        return Node(name, parent, mean, var, seed=self.seed)
+        return Node(name, parent, mean, var)  ##
 
     def insert(self, parent_node, name, mean, var):
         if parent_node is None:
             node = self.create_node(name, mean=mean, var=var)
             if node.level == 0:
                 self.root = node
-                value = node.get_reward()
+                value = node.reset()
                 self.graph['root'] = node
             return node
 
         node = self.create_node(name, parent_node, mean, var)
-        value = node.get_reward()
+        value = node.reset()
         self.graph[name] = node
         parent_node.children.append(node)
         parent_node.nb_children = len(parent_node.children)
@@ -100,6 +107,13 @@ class Tree:
             reward += node.value
         return reward
     
+    def get_mu_leaf(self, leaf):
+        parents_leaf = self.get_parent_nodes(leaf)
+        mu = 0 
+        for node in parents_leaf:
+            mu += node.mean
+        return mu
+    
     def get_reward_leaves(self):
         leaves = self.get_all_leaves()
         data = []
@@ -107,45 +121,83 @@ class Tree:
             data.append([leaf, leaf.name, self.get_reward_leaf(leaf)])
         return data
 
+    def get_mu_leaves(self):
+        leaves = self.get_all_leaves()
+        data = []
+        for leaf in leaves:
+            data.append([leaf, leaf.name, self.get_mu_leaf(leaf)])
+        return data
 
-    def iterative_dfs(self, node_key=None):
-        if not node_key:
-            node_key = 'root'
-        visited = []
-        stack = deque()
-        stack.append(node_key)
-        while stack:
-            node_key = stack.pop()
-            if node_key not in visited:
-                visited.append(node_key)
-                unvisited = [n.name for n in self.graph[node_key].children if n.name not in visited]
-                stack.extend(unvisited)
-        return visited
-
-    def iterative_bfs(self, start=None):
-        if not start:
-            start = 'root'
-        visited = []
-        queue = deque()
-        queue.append(start)
-        while queue:
-            node_key = queue.popleft()
-            if node_key not in visited:
-                visited.append(node_key)
-                unvisited = [n.name for n in self.graph[node_key].children if n.name not in visited]
-                queue.extend(unvisited)
-        return visited
 
     def find_best_arm_path(self):
-        data = self.get_reward_leaves()
+        data = self.get_mu_leaves()
         best_leaf_index = np.argmax([x[2] for x in data])
         best_leaf, _, _ = data[best_leaf_index]
         path_nodes = self.get_parent_nodes(best_leaf)
-        path_rewards = [node.value for node in path_nodes]
-        path_names = [node.name for node in path_nodes]
+        #path_rewards = [node.value for node in path_nodes]
+        #path_names = [node.name for node in path_nodes]
         return path_nodes
     
-    def visualize_tree(self):
+    def extract_tree_structure_from_tree(self):
+        structure = []
+        all_nodes = self.get_all_nodes()
+        max_level = self.max_level
+        
+        for level in range(max_level + 1):
+            level_nodes = [node for node in all_nodes if node.level == level]
+            structure.append(level_nodes)
+            
+        return structure
+
+    
+    def visualize_tree_mu(self):
+        G = nx.DiGraph()
+        labels = {}
+        edge_labels = {}
+        pos = {}
+        node_colors = []
+
+        def add_edges(node, pos_x=0, pos_y=0, layer_width=1.0):
+            node_id = id(node)
+            G.add_node(node_id)
+            labels[node_id] = f"{node.name}\nμ={node.mean:.2f}"
+            pos[node_id] = (pos_x, -pos_y)
+            node_colors.append(node.level)
+
+            num_children = len(node.children)
+            width_step = layer_width / max(num_children, 1)
+
+            for i, child in enumerate(node.children):
+                child_id = id(child)
+                G.add_edge(node_id, child_id)
+                edge_labels[(node_id, child_id)] = f"μ = {child.mean:.2f}"
+
+                child_x = pos_x - layer_width / 2 + (i + 0.5) * width_step
+                add_edges(child, child_x, pos_y + 1, width_step)
+
+        add_edges(self.root)
+
+        cmap = plt.cm.viridis
+        colors = [cmap(l / (self.max_level + 1)) for l in node_colors]
+
+        plt.figure(figsize=(14, 8))
+        nx.draw(
+            G, pos, labels=labels, node_color=colors,
+            with_labels=True, node_size=4000, font_size=9, font_color='white'
+        )
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=9)
+
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=self.max_level))
+        sm.set_array([])
+        cbar = plt.colorbar(sm, ticks=range(self.max_level + 1))
+        cbar.ax.set_yticklabels([f"Level {i}" for i in range(self.max_level + 1)])
+        plt.title("Tree Structure with μ per Node")
+        plt.axis('off')
+        plt.tight_layout()
+        plt.show()
+
+
+    def visualize_tree(self, t):
         G = nx.DiGraph()
         labels = {}
         edge_labels = {}
@@ -180,13 +232,13 @@ class Tree:
         plt.figure(figsize=(14, 8))
         nx.draw(
             G, pos, labels=labels, node_color=colors,
-            with_labels=True, node_size=2000, font_size=10, font_color='white'
+            with_labels=True, node_size=5000, font_size=10, font_color='white'
         )
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=9)
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=10)
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=self.max_level))
         sm.set_array([])
         cbar = plt.colorbar(sm, ticks=range(self.max_level + 1))
-        cbar.ax.set_yticklabels([f"Level {i}" for i in range(self.max_level + 1)])
-        plt.title("Environment")
+        cbar.ax.set_yticklabels([f"Level {i}" for i in list(range(self.max_level + 1))[::-1]])
+        plt.title(f"Simulation at time t = {t}")
         plt.axis('off')
         plt.show()
