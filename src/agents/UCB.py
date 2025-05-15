@@ -14,7 +14,7 @@ class UCB:
       self.count_rewards = np.zeros(self.K)
   
   def get_action(self):
-    if self.t < 2 * self.K:
+    if self.t < self.K:
         action = self.t % self.K
     else:
         with np.errstate(divide='ignore', invalid='ignore'):

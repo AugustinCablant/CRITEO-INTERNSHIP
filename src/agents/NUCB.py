@@ -23,7 +23,7 @@ class NUCB:
     path = []
     path.append(current_node)
 
-    if self.t < 2 * self.len_paths: # Explore
+    if self.t < self.len_paths: # Explore
        path = self.paths[self.t % self.len_paths]
     else:
         for layer in self.tree_structure[1:]:

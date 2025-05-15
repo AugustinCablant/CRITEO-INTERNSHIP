@@ -6,6 +6,97 @@ import gym
 from gym import spaces
 import numpy as np
 
+class StochasticEnvironment(gym.Env):
+    def __init__(self, layers, min_children, max_children, p, reward_min, reward_max, var, seed=None):
+        self.layers = layers
+        self.min_children = min_children
+        self.max_children = max_children
+        self.p = p
+        self.reward_min = reward_min
+        self.reward_max = reward_max
+        self.var = var
+        self.seed = seed
+        self.rng = np.random.RandomState(seed)
+        self.tree = self.generate_tree()
+
+    def reset(self):
+        self.tree.step()
+
+    def generate_tree(self):
+        tree = Tree(self.seed)
+        node_counter = 0  
+        mu_root = self.rng.uniform(self.reward_min, self.reward_max)  # Root mean reward
+        root_name = f"Node {node_counter}"
+        root = tree.insert(parent_node=None, name=root_name, mean=mu_root, var=self.var)
+        node_counter += 1
+
+        def add_layer(parent_node, layer_idx):
+            nonlocal node_counter
+            if layer_idx >= self.layers:
+                return
+
+            num_children = self.rng.randint(self.min_children, self.max_children + 1)
+            for i in range(num_children):
+                if self.rng.rand() < self.p:  # Optimal reward
+                    mean_reward = max(0, self.rng.uniform(self.reward_max - 0.5, self.reward_max + 0.5))
+                else:  # Suboptimal reward
+                    mean_reward = max(0, self.rng.uniform(self.reward_min - 0.1, self.reward_min + 0.1))
+
+                node_name = f"Node {node_counter}"
+                node_counter += 1
+
+                # Adaptation ici : retour de insert peut être node ou (node, parent)
+                inserted = tree.insert(parent_node, node_name, mean=mean_reward, var=self.var)
+                if isinstance(inserted, tuple):
+                    child_node = inserted[0]
+                else:
+                    child_node = inserted
+
+                add_layer(child_node, layer_idx + 1)
+
+        add_layer(root, 1)
+        tree.step()
+        return tree
+
+    def get_action_set(self):
+        return self.tree.get_all_leaves()
+    
+    def sample_randomly(self):
+        action_set = self.get_action_set()
+        random_index = np.random.choice(len(action_set))
+        leaf_chosen = action_set[random_index]
+        return leaf_chosen
+
+    def get_reward_mu(self, index):
+        reward_leaves = self.tree.get_mu_leaves()
+        _, _, reward = reward_leaves[index]
+        return reward
+    
+    def get_reward(self, index):
+        reward_leaves = self.tree.get_reward_leaves()
+        _, _, reward = reward_leaves[index]
+        return reward
+    
+    def get_reward_by_path(self, path):
+        return np.sum([node.value for node in path]), [node.value for node in path], np.sum([node.mean for node in path])
+    
+    def get_total_reward_per_leaf(self):
+        action_set = self.get_action_set()
+        total_reward_per_leaf = [self.get_reward(leaf) for leaf in action_set]
+        self.total_reward_per_leaf = total_reward_per_leaf
+        return total_reward_per_leaf
+    
+    def get_best_strategy_reward(self):
+        best_arm_path =  self.tree.find_best_arm_path()
+        return [node.name for node in best_arm_path] , np.sum([node.mean for node in best_arm_path])
+    
+    def step(self):
+        self.tree.step()
+    
+    def render(self, mode='human', close=False):
+        pass
+
+""" 
 
 class StochasticEnvironment(gym.Env):
     def __init__(self, layers, min_children, max_children, p, reward_min, reward_max, var, seed=None):
@@ -95,7 +186,7 @@ class StochasticEnvironment(gym.Env):
 
 
 
-""" 
+
 class StochasticEnvironment(gym.Env):
     def __init__(self, mus, seed=None):
         self.mus = mus

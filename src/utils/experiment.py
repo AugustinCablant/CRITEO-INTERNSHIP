@@ -147,6 +147,7 @@ def plot_regret(regrets, logscale = False, lb = None, q = 10, save_pdf = None):
 
     plt.xlabel('time steps')
     plt.ylabel('Cumulative Regret')
+    #plt.ylim(0, 550)
     plt.legend()
     if save_pdf != None:
         plt.savefig(f'{save_pdf}')
