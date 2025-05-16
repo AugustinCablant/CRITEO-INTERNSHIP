@@ -20,22 +20,35 @@ class NUCB:
   
   def get_path(self):
     current_node = self.tree_structure[0][0]  # root
-    path = []
-    path.append(current_node)
+    path = [current_node]
 
-    if self.t < self.len_paths: # Explore
-       path = self.paths[self.t % self.len_paths]
+    if self.t < self.len_paths:  # Exploration phase
+        path = self.paths[self.t % self.len_paths]
     else:
-        for layer in self.tree_structure[1:]:
-           count_rewards = np.array([self.rewards[node.name] for node in layer])
-           count_actions = np.array([self.counts[node.name] for node in layer])
-           empirical_means = count_rewards / count_actions
-           ucbs = np.sqrt(2 * np.log(self.t) / count_actions)
-           scores = empirical_means + ucbs
-           layer_action = np.argmax(scores)
-           node_action = layer[layer_action]
-           path.append(node_action)
-           self.counts[node_action.name] += 1
+        for _ in self.tree_structure[1:]:
+            parent_node = path[-1]
+            children = parent_node.children  # Only consider children of the last chosen node
+
+            # Filter out children with 0 visits to avoid division by zero
+            count_rewards = np.array([self.rewards[child.name] for child in children])
+            count_actions = np.array([self.counts[child.name] for child in children])
+
+            # Avoid division by zero in empirical means
+            empirical_means = np.zeros_like(count_rewards)
+            mask = count_actions > 0
+            empirical_means[mask] = count_rewards[mask] / count_actions[mask]
+
+            # UCB term: infinite if not yet visited
+            ucbs = np.sqrt(2 * np.log(self.t) / np.maximum(count_actions, 1e-6))
+            ucbs[~mask] = float('inf')  # Ensure unvisited nodes are explored
+
+            scores = empirical_means + ucbs
+            best_child_idx = np.argmax(scores)
+            node_action = children[best_child_idx]
+
+            path.append(node_action)
+            self.counts[node_action.name] += 1
+
     self.t += 1
     self.tree.step()
     return path

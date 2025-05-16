@@ -116,7 +116,7 @@ def play(environment, agent, Nmc, T):
     return agent.name(), data
 
 
-def plot_regret(regrets, logscale = False, lb = None, q = 10, save_pdf = None):
+def plot_regret(regrets, logscale = False, lb = None, q = 10, save_pdf = None, UCB_regret=False):
     """
     regrets must be a dict {'agent_id':regret_table}
     """
@@ -144,6 +144,12 @@ def plot_regret(regrets, logscale = False, lb = None, q = 10, save_pdf = None):
 
     if lb is not None:
         plt.plot(np.arange(T), lb, color='black', marker='*', markevery=int(T/10))
+
+    if UCB_regret:
+        time_interval = np.arange(T)
+        K = 101
+        UCB_regret = [np.sqrt(K * t * np.log(t)) for t in time_interval]
+        plt.plot(np.arange(T), UCB_regret, color="red", label=r' $\sqrt{K T \log T}$ ')
 
     plt.xlabel('time steps')
     plt.ylabel('Cumulative Regret')
