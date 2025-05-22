@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 class Node:
     def __init__(self, name, parent=None, mean=0, var=1, seed=None):
         #self.seed = seed
-        self.rng =  np.random.RandomState(seed)
+        #self.rng =  np.random.RandomState(seed)
+        self.rng = np.random.default_rng()
         self.name = name
         self.mean = mean  
         self.var = var  
@@ -32,9 +33,11 @@ class Node:
         return value
 
 class NodeUniform:
-    def __init__(self, name, parent=None, seed=None):
+    def __init__(self, name, parent=None, seed=None, best=False):
         #self.seed = seed
-        self.rng =  np.random.RandomState(seed)
+        self.best = best
+        #self.rng =  np.random.RandomState(seed)
+        self.rng = np.random.default_rng()
         self.name = name
         self.children = []
         self.scores_children = np.array([])
@@ -53,8 +56,12 @@ class NodeUniform:
         return nodes
 
     def reset(self):
-        value = self.rng.uniform()
-        self.value = value
+        if self.best:
+            value = 1
+            self.value = value
+        else:
+            value = self.rng.uniform()
+            self.value = value
         return value
 
 
@@ -72,22 +79,27 @@ class Tree:
             node.reset()
             self.graph[key] = node
 
-    def create_node(self, name, parent=None, mean=0, var=1):
+    def create_node(self, name, parent=None, mean=0, var=1, best=False):
         if self.uniform:
-            return NodeUniform(name, parent)
+            return NodeUniform(name, parent, best)
         else:
             return Node(name, parent, mean, var)  ##
 
-    def insert(self, parent_node, name, mean=0, var=1):
+    def insert(self, parent_node, name, mean=0, var=1, best=False):
         if parent_node is None:
-            node = self.create_node(name, mean=mean, var=var)
+            if self.uniform:
+                node = self.create_node(name, mean=mean, var=var, best=best)
+            else:
+                node = self.create_node(name, mean=mean, var=var)
             if node.level == 0:
                 self.root = node
                 value = node.reset()
                 self.graph['root'] = node
             return node
-
-        node = self.create_node(name, parent_node, mean, var)
+        if self.uniform:
+            node = self.create_node(name, parent_node, mean, var, best)
+        else:
+            node = self.create_node(name, parent_node, mean, var)
         value = node.reset()
         self.graph[name] = node
         parent_node.children.append(node)
