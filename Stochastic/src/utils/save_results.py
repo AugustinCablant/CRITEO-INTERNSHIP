@@ -41,4 +41,3 @@ def save_result(settings, regret, reward, round):
 
     with open(fname, 'a') as file:
         file.write(result)
-        
