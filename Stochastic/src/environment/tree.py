@@ -238,7 +238,7 @@ class Tree:
         plt.show()
 
 
-    def visualize_tree(self, t):
+    def visualize_tree(self):
         G = nx.DiGraph()
         labels = {}
         edge_labels = {}
@@ -280,6 +280,6 @@ class Tree:
         sm.set_array([])
         cbar = plt.colorbar(sm, ticks=range(self.max_level + 1))
         cbar.ax.set_yticklabels([f"Level {i}" for i in list(range(self.max_level + 1))[::-1]])
-        plt.title(f"Simulation at time t = {t}")
+        plt.title(f"Vizualization of the Tree")
         plt.axis('off')
         plt.show()
