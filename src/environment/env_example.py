@@ -3,7 +3,7 @@ from src.environment.tree import Tree
 import numpy as np 
 
 class EnvironmentExample(gym.Env):
-    def __init__(self, seed=2025):
+    def __init__(self, seed=None):
         self.seed = seed
         self.rng = np.random.RandomState(seed)
         self.tree = None
@@ -12,35 +12,35 @@ class EnvironmentExample(gym.Env):
     def reset(self):
         self.tree = self.generate_tree()
     
-    def generate_tree(self, seed):  
-        tree = Tree(uniform=True, seed) 
-        root = tree.insert(parent_node=None, name="Targeting")
+    def generate_tree(self):  
+        tree = Tree(uniform=False, seed=self.seed) 
+        root = tree.insert(parent_node=None, name="Targeting", mean=0, var=0)
 
         # First Layer
-        families, _ = tree.insert(parent_node=root, name="families")
-        professionals, _ = tree.insert(parent_node=root, name="professionals")
+        families, _ = tree.insert(parent_node=root, name="families", mean=0.20, var=0.5)
+        professionals, _ = tree.insert(parent_node=root, name="professionals", mean=0.8, var =0.5)
 
         # Second Layer
-        adults, _ = tree.insert(parent_node=families, name="adults")
-        youngs, _ = tree.insert(parent_node=families, name="youngs")
+        adults, _ = tree.insert(parent_node=families, name="adults", mean=0.1, var=0.2)
+        youngs, _ = tree.insert(parent_node=families, name="youngs", mean=0.1, var=0.2)
 
-        start_up, _ = tree.insert(parent_node=professionals, name="start-up")
-        companies, _ = tree.insert(parent_node=professionals, name="companies")
+        start_up, _ = tree.insert(parent_node=professionals, name="start-up", mean=0.2, var=0.2)
+        companies, _ = tree.insert(parent_node=professionals, name="companies", mean=0.4, var=0.2)
 
         # Third Layer
-        radio, _ = tree.insert(parent_node=adults, name="radio")
-        tv, _ = tree.insert(parent_node=adults, name="tv")
-        magazines, _ = tree.insert(parent_node=adults, name="magazines")
-        tv, _ = tree.insert(parent_node=adults, name="supermarket")
+        radio, _ = tree.insert(parent_node=adults, name="radio", mean=0.01, var=0.1)
+        tv, _ = tree.insert(parent_node=adults, name="tv", mean=0.01, var=0.1)
+        magazines, _ = tree.insert(parent_node=adults, name="magazines", mean=0.01, var=0.1)
+        tv, _ = tree.insert(parent_node=adults, name="supermarket", mean=0.05, var=0.1)
 
-        youtube, _ = tree.insert(parent_node=youngs, name="youtube")
-        social_networks, _ = tree.insert(parent_node=youngs, name="social networks")
+        youtube, _ = tree.insert(parent_node=youngs, name="youtube", mean=0.06, var=0.1)
+        social_networks, _ = tree.insert(parent_node=youngs, name="social networks", mean=0.01, var=0.1)
         
-        webinaire, _ = tree.insert(parent_node=start_up, name="webinaire")
-        events, _ = tree.insert(parent_node=start_up, name="events")
+        webinaire, _ = tree.insert(parent_node=start_up, name="webinaire", mean=0.09, var=0.1)
+        events, _ = tree.insert(parent_node=start_up, name="events", mean=0.1, var=0.1)
 
-        linkedin, _ = tree.insert(parent_node=companies, name="linkedin")
-        email, _ = tree.insert(parent_node=companies, name="email")
+        linkedin, _ = tree.insert(parent_node=companies, name="linkedin", mean=0.1, var=0.1)
+        email, _ = tree.insert(parent_node=companies, name="email", mean=0.01, var=0.1)
 
         tree.step()
         return tree

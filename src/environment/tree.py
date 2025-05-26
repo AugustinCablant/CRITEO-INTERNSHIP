@@ -4,8 +4,9 @@ import networkx as nx
 import matplotlib.pyplot as plt 
 
 class Node:
-    def __init__(self, name, parent=None, mean=0, var=1, seed=2025):
-        self.rng = np.random.RandomState(seed)
+    def __init__(self, name, parent=None, mean=0, var=1, seed=None):
+        #self.rng = np.random.RandomState(seed)
+        self.rng = np.random.default_rng() 
         self.name = name
         self.mean = mean  
         self.var = var  
@@ -18,8 +19,7 @@ class Node:
     
 
     def get_child_nodes(self):
-        if not nodes:
-            nodes = []
+        nodes = []
         for child in self.children:
             nodes.append((child.name, child.level, child.nb_children))
             nodes.extend(child.get_child_nodes())
@@ -27,75 +27,43 @@ class Node:
 
     def reset(self):
         value = self.mean + np.sqrt(self.var) * self.rng.normal()
-        self.value = value
-        return value
-
-class NodeUniform:
-    def __init__(self, name, parent=None, seed=2025, best=False):
-        self.best = best
-        self.rng = np.random.RandomState(seed)
-        self.name = name
-        self.children = []
-        self.scores_children = np.array([])
-        self.nb_children = 0
-        self.parent = parent
-        self.level = parent.level + 1 if parent else 0
-        self.reset()
-    
-
-    def get_child_nodes(self):
-        if not nodes:
-            nodes = []
-        for child in self.children:
-            nodes.append((child.name, child.level, child.nb_children))
-            nodes.extend(child.get_child_nodes())
-        return nodes
-
-    def reset(self):
-        if self.best:
-            value = 1
-            self.value = value
-        else:
-            value = self.rng.uniform()
-            self.value = value
+        self.value = np.abs(value)
         return value
 
 
 class Tree:
-    def __init__(self, seed=None, uniform=False):
-        self.uniform = uniform
+    def __init__(self, seed=None):
         self.levels = [[]]
         self.graph = {'root': None,}
         self.max_level = 0
         self.seed = seed
-        self.rng = np.random.RandomState(seed)
+        #self.rng = np.random.RandomState(seed)
+        self.rng = np.random.default_rng() 
 
     def step(self):
         for key, node in self.graph.items():
             node.reset()
             self.graph[key] = node
+        for layer in self.get_nodes_by_layer().items():
+            i, nodes = layer
+            if i!=0:
+                total_sum = np.sum([node.value for node in nodes])
+                for node in nodes:
+                    self.graph[node.name].value /= total_sum 
+
 
     def create_node(self, name, parent=None, mean=0, var=1, best=False):
-        if self.uniform:
-            return NodeUniform(name, parent, self.seed, best)
-        else:
-            return Node(name, parent, mean, var)  ##
+        return Node(name, parent, mean, var)  ##
 
     def insert(self, parent_node, name, mean=0, var=1, best=False):
         if parent_node is None:
-            if self.uniform:
-                node = self.create_node(name, mean=mean, var=var, best=best)
-            else:
-                node = self.create_node(name, mean=mean, var=var)
+            node = self.create_node(name, mean=mean, var=var)
             if node.level == 0:
                 self.root = node
                 value = node.reset()
                 self.graph['root'] = node
             return node
-        if self.uniform:
-            node = self.create_node(name, parent_node, mean, var, best)
-        else:
-            node = self.create_node(name, parent_node, mean, var)
+        node = self.create_node(name, parent_node, mean, var)
         value = node.reset()
         self.graph[name] = node
         parent_node.children.append(node)
@@ -114,6 +82,14 @@ class Tree:
         nodes = _recursive_parent_nodes(node, nodes)
         nodes.reverse()
         return nodes
+    
+    def get_childs(self, node_parent):
+        set_nodes = self.get_all_nodes()[1:]
+        childs = []
+        for node in set_nodes:
+            if node.parent.name == node_parent.name:
+                childs.append(node)
+        return childs
 
     def get_all_nodes(self):
         nodes = [self.root]
@@ -150,7 +126,13 @@ class Tree:
         for leaf in leaves:
             data.append([leaf, leaf.name, self.get_reward_leaf(leaf)])
         return data
-
+    
+    def get_siblings(self, node):
+        siblings = []
+        for n in self.get_all_nodes():
+            if n.parent == node.parent:
+                siblings.append(n)
+        return siblings
 
     def find_best_arm_path(self):
         data = self.get_reward_leaves()
@@ -170,6 +152,15 @@ class Tree:
             level_nodes = [node for node in all_nodes if node.level == level]
             structure.append(level_nodes)
         return structure
+    
+    def get_nodes_by_layer(self):
+        nodes_by_level = {}
+        for node in self.get_all_nodes():
+            level = node.level
+            if level not in nodes_by_level:
+                nodes_by_level[level] = []
+            nodes_by_level[level].append(node)
+        return nodes_by_level
 
     def visualize_tree(self):
         G = nx.DiGraph()
