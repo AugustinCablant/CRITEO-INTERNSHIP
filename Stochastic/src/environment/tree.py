@@ -32,38 +32,6 @@ class Node:
         self.value = value
         return value
 
-class NodeUniform:
-    def __init__(self, name, parent=None, seed=None, best=False):
-        #self.seed = seed
-        self.best = best
-        #self.rng =  np.random.RandomState(seed)
-        self.rng = np.random.default_rng()
-        self.name = name
-        self.children = []
-        self.scores_children = np.array([])
-        self.nb_children = 0
-        self.parent = parent
-        self.level = parent.level + 1 if parent else 0
-        self.reset()
-    
-
-    def get_child_nodes(self):
-        if not nodes:
-            nodes = []
-        for child in self.children:
-            nodes.append((child.name, child.level, child.nb_children))
-            nodes.extend(child.get_child_nodes())
-        return nodes
-
-    def reset(self):
-        if self.best:
-            value = 1
-            self.value = value
-        else:
-            value = self.rng.uniform()
-            self.value = value
-        return value
-
 
 class Tree:
     def __init__(self, seed=None, uniform=False):
@@ -80,10 +48,7 @@ class Tree:
             self.graph[key] = node
 
     def create_node(self, name, parent=None, mean=0, var=1, best=False):
-        if self.uniform:
-            return NodeUniform(name, parent, best)
-        else:
-            return Node(name, parent, mean, var)  ##
+        return Node(name, parent, mean, var)  ##
 
     def insert(self, parent_node, name, mean=0, var=1, best=False):
         if parent_node is None:
