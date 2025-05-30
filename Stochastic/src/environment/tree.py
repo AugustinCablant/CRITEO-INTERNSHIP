@@ -29,6 +29,7 @@ class Node:
 
     def reset(self):
         value = self.mean + np.sqrt(self.var) * self.rng.normal()
+        value = np.clip(value, 0.0, 1.0)  #####
         self.value = value
         return value
 
@@ -111,6 +112,7 @@ class Tree:
         reward = 0 
         for node in parents_leaf:
             reward += node.value
+        reward = np.clip(reward, 0.0, 1.0)     ########
         return reward
     
     def get_mu_leaf(self, leaf):
