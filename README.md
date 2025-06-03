@@ -6,6 +6,9 @@ This repository provides a stochastic environment for simulating interactions in
 
 The project aims to model and simulate decision-making scenarios where actions are nested and feedback is obtained in a stochastic manner. It serves as a testbed for developing and evaluating algorithms designed to solve the **Stochastic Nested Bandit Problem**, which arises in various real-world applications such as recommendation systems, online advertising, and hierarchical decision processes.
 
+![Nested Environment](https://github.com/AugustinCablant/CRITEO-INTERNSHIP/blob/main/tree_mu_baselines.png)
+
+
 ## Features
 
 - Simulation of nested decision structures with stochastic rewards  
