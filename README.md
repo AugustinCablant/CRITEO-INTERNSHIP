@@ -29,6 +29,7 @@ The project aims to model and simulate decision-making scenarios where actions a
 | Tsallis-INF      | Best of Both Worlds    | [Zimmert & Seldin (2019)](https://arxiv.org/pdf/1807.07623)              |
 | NEW              | Adversarial            | [Zimmert & Lattimore (2022)](https://arxiv.org/pdf/2206.09348)           |
 | NUCB             | Stochastic (Nested)    |                                                                          |
+| CombinExp3       | Stochastic (Nested)    |                                                                          |
 
 
 
