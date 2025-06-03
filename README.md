@@ -28,6 +28,8 @@ The project aims to model and simulate decision-making scenarios where actions a
 | SAO              | Best of Both Worlds    | [Bubeck et al. (2012)](http://proceedings.mlr.press/v23/bubeck12b/bubeck12b.pdf) |
 | Tsallis-INF      | Best of Both Worlds    | [Zimmert & Seldin (2019)](https://arxiv.org/pdf/1807.07623)              |
 | NEW              | Adversarial            | [Zimmert & Lattimore (2022)](https://arxiv.org/pdf/2206.09348)           |
+| NUCB             | Stochastic (Nested)    |                                                                          |
+
 
 
 ## Use Cases
