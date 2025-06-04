@@ -15,9 +15,23 @@ The project aims to model and simulate decision-making scenarios where actions a
 - Customizable environments for experimentation  
 - Easily extensible for testing new algorithms  
 
-## Projet structure
+## Implementation of Baselines
 
-To do
+| Algorithm         | Setting                | Reference                                                                 |
+|------------------|------------------------|---------------------------------------------------------------------------|
+| UCB              | Stochastic             | [Lattimore & Szepesvári (2020)](https://tor-lattimore.com/downloads/book/book.pdf) |
+| Thompson Sampling| Stochastic             | [Russo et al. (2018)](https://web.stanford.edu/~bvr/pubs/TS_Tutorial.pdf) |
+| KL-UCB           | Stochastic             | [Garivier & Cappé (2011)](https://arxiv.org/pdf/1102.2490)               |
+| Exp3             | Adversarial            | [Cesa-Bianchi & Lugosi (2006)](https://sequential-learning.github.io/docs/online_learning_lecture_notes.pdf#page=5) |
+| Exp3.P           | Adversarial            | [Bubeck & Cesa-Bianchi (2012)](http://sbubeck.com/SurveyBCB12.pdf)       |
+| Exp3++           | Adversarial            | [Seldin & Lugosi (2017)](https://proceedings.mlr.press/v65/seldin17a/seldin17a.pdf) |
+| SAO              | Best of Both Worlds    | [Bubeck et al. (2012)](http://proceedings.mlr.press/v23/bubeck12b/bubeck12b.pdf) |
+| Tsallis-INF      | Best of Both Worlds    | [Zimmert & Seldin (2019)](https://arxiv.org/pdf/1807.07623)              |
+| NEW              | Adversarial            | [Zimmert & Lattimore (2022)](https://arxiv.org/pdf/2206.09348)           |
+| NUCB             | Stochastic (Nested)    |                                                                          |
+| CombinExp3       | Stochastic (Nested)    |                                                                          |
+
+
 
 ## Use Cases
 
