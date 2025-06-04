@@ -17,7 +17,12 @@ class Node:
         self.parent = parent
         self.level = parent.level + 1 if parent else 0
         self.reset()
-    
+
+    def reset(self):
+        value = self.mean + np.sqrt(self.var) * self.rng.normal()
+        value = np.clip(value, 0.0, 1.0)  #####
+        self.value = value
+        return value
 
     def get_child_nodes(self):
         if not nodes:
@@ -26,12 +31,16 @@ class Node:
             nodes.append((child.name, child.level, child.nb_children))
             nodes.extend(child.get_child_nodes())
         return nodes
+    
+    def features(self):
+        return np.array([
+            self.level / 3,          
+            self.mean,                
+            self.var,                 
+            self.value               
+        ], dtype=np.float32)
 
-    def reset(self):
-        value = self.mean + np.sqrt(self.var) * self.rng.normal()
-        value = np.clip(value, 0.0, 1.0)  #####
-        self.value = value
-        return value
+    
 
 
 class Tree:
